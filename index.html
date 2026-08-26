@@ -1079,7 +1079,7 @@
       <button data-asub="schedule" class="asubbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">📅 นำเข้าตารางสอน</button>
       <button data-asub="teachers" class="asubbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">👤 จัดการครู / PIN</button>
       <button data-asub="docs"     class="asubbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">📄 คำอธิบายรายวิชา</button>
-      <button data-asub="backup"   class="asubbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">💾 สำรองข้อมูลอัตโนมัติ</button>
+      <button data-asub="backup"   class="asubbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">🚀 เผยแพร่/สำรอง</button>
       <button data-asub="locks"    class="asubbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">🔒 อนุมัติ/ล็อกผล</button>
     </div>
 
@@ -1224,6 +1224,27 @@
 
     <!-- asub: backup (สำรองข้อมูลอัตโนมัติ) -->
     <div id="asub-backup" class="asubpane hidden">
+      <div class="card p-4 mb-4">
+        <h3 class="font-bold text-teal-700 mb-1">🚀 เผยแพร่ข้อมูลนิ่งขึ้น GitHub (Sheets + Edge)</h3>
+        <p class="text-[11px] text-slate-400 mb-2">เผยแพร่ข้อมูลกลาง (ตั้งค่า/เกณฑ์เกรด/รายวิชา/ตารางสอน/ปฏิทิน/รายชื่อครู — <b>ไม่มีข้อมูลนักเรียน/รหัสผ่าน</b>) เป็นไฟล์ JSON บนเว็บโรงเรียน ให้หน้าเว็บโหลดก่อน เปิดเครื่องใหม่ก็เร็วระดับ CDN</p>
+        <p id="eg_status" class="text-sm mb-2 text-slate-500">กำลังโหลดสถานะ…</p>
+        <div class="flex flex-wrap gap-3 items-end mb-2">
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="eg_auto" class="w-4 h-4"> เผยแพร่อัตโนมัติ (ตรวจทุก 5 นาที เฉพาะเมื่อมีแก้ไข)</label>
+          <button onclick="saveEdgeAuto()" class="btn bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 text-sm">บันทึกการตั้งค่า</button>
+          <button onclick="publishEdgeNowFE()" class="btn bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 text-sm">🚀 เผยแพร่ทันที</button>
+        </div>
+        <details class="text-sm">
+          <summary class="cursor-pointer text-slate-500 text-xs">⚙️ ตั้งค่า GitHub (ทำครั้งแรกครั้งเดียว)</summary>
+          <div class="grid sm:grid-cols-2 gap-2 mt-2">
+            <div><label class="text-xs text-slate-500">Repo (เจ้าของ/ชื่อ)</label><input id="eg_repo" class="inp mt-1" placeholder="nsrschool/record_grades_m1-3"></div>
+            <div><label class="text-xs text-slate-500">Branch</label><input id="eg_branch" class="inp mt-1" placeholder="main"></div>
+            <div><label class="text-xs text-slate-500">Path ไฟล์</label><input id="eg_path" class="inp mt-1" placeholder="data/boot_public.json"></div>
+            <div><label class="text-xs text-slate-500">GitHub Token</label><input id="eg_token" type="password" class="inp mt-1" placeholder="วางเฉพาะเมื่อต้องการตั้ง/เปลี่ยน"></div>
+          </div>
+          <button onclick="saveEdgeConfigFE()" class="btn bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 text-sm mt-2">💾 บันทึกตั้งค่า GitHub</button>
+          <p class="text-[11px] text-slate-400 mt-1">Token เก็บฝั่งเซิร์ฟเวอร์เท่านั้น ไม่แสดงกลับหน้าเว็บ • สร้างแบบ Fine-grained: GitHub → Settings → Developer settings → Personal access tokens → สิทธิ์ Contents (Read and write) เฉพาะ repo นี้</p>
+        </details>
+      </div>
       <div class="card p-4 mb-4">
         <h3 class="font-bold text-teal-700 mb-2">💾 สำรองข้อมูลอัตโนมัติลง Google Drive</h3>
         <div class="flex flex-wrap gap-3 items-end">
@@ -1657,9 +1678,9 @@ async function applyBootstrap(data){
   state.mapping=data.mapping||[];
   state.semester=String(state.settings.currentSemester||'1');
   state.calendar=data.calendar||[];
-  state.locks=data.locks||[];
-  await loadStudents(data.students||[]);
-  await loadSubjects(data.subjects||[]);
+  if(data.locks) state.locks=data.locks;
+  if(data.students) await loadStudents(data.students);     // ก้อนไฟล์นิ่งไม่มีนักเรียน → ข้าม รอของจริงจาก GAS
+  if(data.subjects) await loadSubjects(data.subjects);
   if(data.schedule) state.mySchedule=data.schedule;
   if(data.myTeach)  state.myTeach=data.myTeach;
   if(data.teachers&&data.teachers.length) state.teachers=data.teachers;
@@ -1667,7 +1688,7 @@ async function applyBootstrap(data){
   applySettingsToUI();
   applyFavicon();
   renderMapping();
-  renderHome();
+  if(data.students) renderHome();
 }
 async function bootstrap(){
   // เติม dropdown กลุ่มสาระ
@@ -1683,14 +1704,30 @@ async function bootstrap(){
     setStatus(true);
     await seedDemoIfEmpty();
   };
-  // เปิดปุ๊บเห็นปั๊บ: วาดจากข้อมูลล่าสุดในเครื่องก่อน แล้วดึงของจริงมาแทนเบื้องหลัง
-  let hadCache=false;
+  // ชั้นที่ 1: แคชในเครื่อง (เร็วสุด ครบทุกส่วน)
+  let hadCache=false, hadStatic=false;
   try{
     const c=JSON.parse(localStorage.getItem(BOOT_CACHE_KEY)||'null');
     if(c && c.settings){ await applyBootstrap(c); setStatus(true); hadCache=true; }
   }catch(e){}
-  if(hadCache){
-    fetchFresh().catch(()=>{ setStatus(false); });
+  // ชั้นที่ 2 (Static-First): เครื่องใหม่ไม่มีแคช → โหลดไฟล์นิ่งบนเว็บโรงเรียน (เร็วระดับ CDN)
+  if(!hadCache){
+    try{
+      const ctrl=new AbortController(); const tm=setTimeout(()=>ctrl.abort(),3500);
+      const res=await fetch('data/boot_public.json',{cache:'no-store', signal:ctrl.signal});
+      clearTimeout(tm);
+      if(res.ok){
+        const pub=await res.json();
+        if(pub && pub.settings){ await applyBootstrap(pub); setStatus(true); hadStatic=true; }
+      }
+    }catch(e){}
+  }
+  // ชั้นที่ 3: ข้อมูลจริงจาก GAS (ทับของเก่าเงียบ ๆ) — ถ้าเชื่อมไม่ได้ ระบบยังเปิดได้จากชั้น 1-2
+  if(hadCache || hadStatic){
+    fetchFresh().catch(()=>{
+      setStatus(false);
+      toast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — กำลังแสดงข้อมูลสำรองชั่วคราว','error');
+    });
     return;
   }
   try{
@@ -4115,7 +4152,46 @@ async function initBackup(){
   if(hs && !hs.options.length){
     for(let h=0;h<24;h++) hs.add(new Option(String(h).padStart(2,'0')+':00', h));
   }
+  refreshEdgeStatus();
   await refreshBackupStatus();
+}
+/* ---- เผยแพร่ Edge (Static-First) ---- */
+async function refreshEdgeStatus(){
+  try{
+    const st=await GAS.call('getEdgeStatus');
+    document.getElementById('eg_auto').checked=!!st.enabled;
+    document.getElementById('eg_repo').placeholder=st.repo||'';
+    document.getElementById('eg_branch').placeholder=st.branch||'main';
+    document.getElementById('eg_path').placeholder=st.path||'';
+    const dot=st.lastError?'🔴':(st.dirty?'🟡':'🟢');
+    const msg=st.lastError?('ผิดพลาดล่าสุด: '+esc(st.lastError)):(st.dirty?'มีการแก้ไขรอเผยแพร่':'ข้อมูลบนเว็บเป็นปัจจุบัน');
+    document.getElementById('eg_status').innerHTML=
+      dot+' '+msg+' • เผยแพร่ล่าสุด: '+esc(st.lastPublish||'—')+
+      (st.tokenSet?'':' • <span class="text-amber-600">⚠️ ยังไม่ได้ตั้งค่า Token</span>')+
+      (st.enabled?'':' • <span class="text-slate-400">อัตโนมัติ: ปิด</span>');
+  }catch(e){ const el=document.getElementById('eg_status'); if(el) el.textContent='โหลดสถานะไม่ได้: '+e.message; }
+}
+async function saveEdgeConfigFE(){
+  try{ showLoading(true);
+    await GAS.call('saveEdgeConfig',{repo:val('eg_repo'), branch:val('eg_branch'), path:val('eg_path'), token:val('eg_token')});
+    document.getElementById('eg_token').value='';
+    toast('บันทึกตั้งค่า GitHub แล้ว','success');
+    await refreshEdgeStatus();
+  }catch(e){ toast(e.message,'error'); } finally{ showLoading(false); }
+}
+async function saveEdgeAuto(){
+  try{ showLoading(true);
+    await GAS.call('setEdgeAuto',{enable:document.getElementById('eg_auto').checked});
+    toast('บันทึกแล้ว','success');
+    await refreshEdgeStatus();
+  }catch(e){ toast(e.message,'error'); } finally{ showLoading(false); }
+}
+async function publishEdgeNowFE(){
+  try{ showLoading(true);
+    await GAS.call('publishEdgeNow');
+    toast('เผยแพร่ขึ้น GitHub แล้ว ✅ (มีผลบนเว็บใน ~1 นาที)','success');
+    await refreshEdgeStatus();
+  }catch(e){ toast(e.message,'error'); } finally{ showLoading(false); }
 }
 async function refreshBackupStatus(){
   try{ showLoading(true);
@@ -4158,10 +4234,11 @@ async function backupNow(){
 }
 async function restoreBackup(id,name){
   if(!confirm('กู้คืนข้อมูลจากไฟล์ "'+name+'"?\n\n⚠️ ข้อมูลปัจจุบันทั้งหมดจะถูกแทนที่ด้วยข้อมูลในไฟล์สำรองนี้')) return;
+  if(!confirm('ยืนยันอีกครั้ง: กู้คืนจริง ๆ ใช่ไหม?\n(ระบบจะสำรองสภาพปัจจุบันเก็บไว้ให้อัตโนมัติก่อนทับ — ย้อนกลับได้)')) return;
   try{ showLoading(true);
-    await GAS.call('restoreBackup',{id});
-    toast('กู้คืนข้อมูลแล้ว — กำลังโหลดใหม่');
-    setTimeout(()=>location.reload(),1200);
+    const r=await GAS.call('restoreBackup',{id});
+    toast('กู้คืนแล้ว ✅ สำรองสภาพก่อนหน้าไว้ที่: '+(r.safetyBackup||'-'),'success');
+    setTimeout(()=>location.reload(),2000);
   }catch(e){ toast(e.message,'error'); } finally{ showLoading(false); }
 }
 
