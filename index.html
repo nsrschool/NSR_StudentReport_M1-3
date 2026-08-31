@@ -223,6 +223,7 @@
       <p class="text-sm text-slate-500" id="homeYear"></p>
       <p class="text-xs text-slate-400 mt-1">ระบบรายงานผลการเรียน ม.1-3 • หลักสูตรแกนกลางฯ พุทธศักราช 2551</p>
     </div>
+    <div id="homeTodo" class="hidden mb-4"></div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4" id="homeStats"></div>
     <div class="grid sm:grid-cols-2 gap-3">
       <div class="card p-4">
@@ -634,7 +635,8 @@
             <option value="">— เลือกรายวิชา —</option>
           </select>
         </div>
-        <div id="sc_modeWrap" class="hidden">
+        <div id="sc_timeCheck" class="hidden mb-2"></div>
+      <div id="sc_modeWrap" class="hidden">
           <label class="text-xs text-slate-500">โหมดการกรอก</label>
           <div class="flex gap-1 mt-1 bg-slate-100 rounded-lg p-1">
             <button id="modeA" class="btn px-3 py-1.5 text-xs" onclick="setScoreMode('A')">📊 คะแนนรายหน่วย</button>
@@ -758,6 +760,7 @@
       <button data-att="period" class="attbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">📋 รายคาบ</button>
       <button data-att="summary" class="attbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">📊 สรุป/รายงาน</button>
       <button data-att="register" class="attbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">📅 บันทึกเวลาเรียน</button>
+      <button data-att="subject" class="attbtn btn px-3 py-1.5 text-sm bg-white border border-slate-200 whitespace-nowrap">📚 เวลาเรียนรายวิชา</button>
     </div>
 
     <!-- att: flag -->
@@ -793,12 +796,17 @@
     <!-- att: period -->
     <div id="att-period" class="attpane hidden">
       <div class="card p-4 mb-4">
+        <div class="flex flex-wrap gap-2 mb-3">
+          <button id="pdmode-date" onclick="setPdMode('date')" class="btn px-3 py-1.5 text-xs bg-teal-600 text-white">📅 ตามวัน</button>
+          <button id="pdmode-subject" onclick="setPdMode('subject')" class="btn px-3 py-1.5 text-xs bg-slate-100 text-slate-600">📚 ตามรายวิชา (เช็คย้อนหลัง)</button>
+          <div id="pd_subjectWrap" class="hidden flex-1 min-w-[220px]"><select id="pd_subject" class="inp text-sm" onchange="onPdSubjectChange()"></select></div>
+        </div>
         <div class="flex flex-wrap gap-3 items-end">
           <div><label class="text-xs text-slate-500">วันที่</label><input type="date" id="att_period_date" class="inp mt-1" onchange="onPdDateChange()"></div>
           <div class="flex-1 min-w-[200px]"><label class="text-xs text-slate-500">คาบเรียน</label><select id="att_period_slot" class="inp mt-1"></select></div>
           <button onclick="loadPeriod()" class="btn bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 text-sm">โหลดรายชื่อ</button>
         </div>
-        <p class="text-[11px] text-slate-400 mt-2">💡 ไม่บังคับเช็ค — คาบที่ไม่ได้เช็ค ระบบจะใช้ผลหน้าเสาธงนับเวลาเรียนให้อัตโนมัติ</p>
+        <p class="text-[11px] text-slate-400 mt-2">💡 คลิกวันในแถบปฏิทินด้านล่าง = โหลดรายชื่อคาบนั้นทันที (ย้อนหลังได้ทุกวันในภาคเรียน) • คาบที่ยังไม่เช็ค ระบบเติมผลหน้าเสาธงของวันนั้นให้ก่อน แก้เฉพาะคนที่ต่าง • คาบที่ไม่ได้เช็ค ระบบใช้ผลหน้าเสาธงนับเวลาเรียนให้อัตโนมัติ</p>
       </div>
       <div id="periodListWrap" class="card p-4 hidden">
         <div id="periodSummary" class="text-xs text-slate-500 mb-2"></div>
@@ -852,6 +860,22 @@
       </div>
     </div>
     <!-- att: register (บันทึกเวลาเรียน) -->
+    <!-- att: subject (สรุปเวลาเรียนรายวิชา) -->
+    <div id="att-subject" class="attpane hidden">
+      <div class="card p-4 mb-4">
+        <div class="flex flex-wrap gap-3 items-end">
+          <div class="flex-1 min-w-[220px]"><label class="text-xs text-slate-500">วิชา • ห้อง</label><select id="sa_subject" class="inp mt-1"></select></div>
+          <div><label class="text-xs text-slate-500">ภาคเรียน</label><select id="sa_sem" class="inp mt-1"><option value="1">1</option><option value="2">2</option></select></div>
+          <button onclick="loadSubjectAtt()" class="btn bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 text-sm">แสดง</button>
+          <button onclick="printSubjectAtt()" class="btn bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 text-sm">🖨️ พิมพ์ A4</button>
+          <button onclick="exportSubjectAtt()" class="btn bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm">📥 Excel</button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2">คำนวณจากตารางสอนจริง × วันเปิดเรียน (ถึงวันนี้) — คาบที่ไม่ได้เช็ครายคาบใช้ผลหน้าเสาธงของวันนั้น (แสดงจาง) • เกณฑ์เวลาเรียน ≥80% ตามระเบียบ 2551 คนที่ต่ำกว่าขึ้นแถบแดง</p>
+        <div id="sa_totals" class="flex flex-wrap gap-2 mt-2"></div>
+      </div>
+      <div id="sa_area" class="card p-4 text-sm text-slate-400">เลือกวิชาแล้วกด "แสดง"</div>
+    </div>
+
     <div id="att-register" class="attpane hidden">
       <div class="card p-4 mb-4">
         <div class="flex flex-wrap gap-3 items-end">
@@ -1660,6 +1684,7 @@ function switchAtt(name){
   if(name==='period') fillPeriodSlots();
   if(name==='summary') initAttReport();
   if(name==='register') initRegister();
+  if(name==='subject') initSubjectAtt();
 }
 document.querySelectorAll('.attbtn').forEach(b=>b.onclick=()=>switchAtt(b.dataset.att));
 function switchAbsub(name){
@@ -2139,6 +2164,11 @@ async function onSelectScoreSubject(){
   const id=sep>=0?raw.slice(0,sep):raw;
   state.scoreRoom=sep>=0?raw.slice(sep+1):'';
   state.scoreSubject=state.subjects.find(s=>String(s.ID)===String(id));
+  state.timeCheck=null;
+  if(id && state.scoreRoom && state.scoreSubject){
+    GAS.call('getSubjectTimeCheck',{classLevel:state.scoreRoom, subject:state.scoreSubject.name, semester:state.semester})
+      .then(r=>{ state.timeCheck=r; renderTimeCheckBadge(); markTimeCheckRows(); }).catch(()=>{});
+  }
   if(!id){
     document.getElementById('sc_empty').classList.remove('hidden');
     document.getElementById('sc_modeWrap').classList.add('hidden');
@@ -2164,6 +2194,45 @@ async function onSelectScoreSubject(){
   }catch(e){ toast(e.message,'error'); } finally{ showLoading(false); }
 }
 
+// ---- 3.1 เวลาเรียน <80% ↔ มส ----
+function renderTimeCheckBadge(){
+  const el=document.getElementById('sc_timeCheck'); const tc=state.timeCheck;
+  if(!el) return;
+  if(!tc || tc.needDates || !tc.periodsTotal){ el.classList.add('hidden'); el.innerHTML=''; return; }
+  const n=(tc.below||[]).length;
+  el.classList.remove('hidden');
+  el.innerHTML=`<div class="flex flex-wrap items-center gap-2 text-xs rounded-lg px-3 py-2 ${n?'bg-rose-50 border border-rose-200':'bg-emerald-50 border border-emerald-200'}">
+    <span>${n?'⚠️':'✅'} เวลาเรียนภาคเรียนนี้ (${tc.periodsTotal} คาบ): ${n?`<b class="text-rose-700">ต่ำกว่า 80% จำนวน ${n} คน</b> — ตามระเบียบ 2551 ควรได้ "มส" เว้นแต่ได้รับผ่อนผัน`:'ทุกคนถึงเกณฑ์ 80%'}</span>
+    ${n?`<button onclick="applyMsForLowTime()" class="btn bg-rose-600 hover:bg-rose-700 text-white px-3 py-1 text-xs">ตั้ง "มส" ให้ ${n} คน (โหมดระดับ/ร้อยละ)</button>
+    <button onclick="switchTab('attendance');setTimeout(()=>switchAtt('subject'),50)" class="btn bg-white border border-rose-200 text-rose-700 px-3 py-1 text-xs">ดูรายละเอียดเวลาเรียน</button>`:''}
+  </div>`;
+}
+function timeTag(sid){
+  const tc=state.timeCheck; if(!tc||!tc.students) return '';
+  const t=tc.students[sid]; if(!t||t.pct==null) return '';
+  return t.pct<80?`<span class="ml-1 text-[10px] text-rose-600 font-semibold" title="เวลาเรียน ${t.pct}% (ขาด ${t.absent} คาบ)">⏱${t.pct}%</span>`:'';
+}
+function markTimeCheckRows(){
+  const tc=state.timeCheck; if(!tc||!tc.students) return;
+  document.querySelectorAll('#scoreBody tr[data-sid], #modeBBody tr[data-sid]').forEach(tr=>{
+    const sid=tr.dataset.sid; const t=tc.students[sid]; if(!t||t.pct==null||t.pct>=80) return;
+    const cell=tr.children[1]; if(cell && !cell.querySelector('.ttag')){ const sp=document.createElement('span'); sp.className='ttag'; sp.innerHTML=timeTag(sid); cell.appendChild(sp); }
+    tr.classList.add('bg-rose-50/40');
+  });
+}
+function applyMsForLowTime(){
+  const tc=state.timeCheck; if(!tc||!tc.below||!tc.below.length) return;
+  if(!confirm('ตั้งผลการเรียนเป็น "มส" ให้นักเรียนที่เวลาเรียนต่ำกว่า 80% จำนวน '+tc.below.length+' คน?\n(ระบบจะสลับไปโหมดระดับ/ร้อยละ — แก้รายคนได้ก่อนกดบันทึก)')) return;
+  setScoreMode('B');
+  let n=0;
+  tc.below.forEach(sid=>{
+    const tr=document.querySelector('#modeBBody tr[data-sid="'+sid+'"]'); if(!tr) return;
+    const sel=tr.querySelector('select.bLvl'); if(!sel) return;
+    if([...sel.options].some(o=>o.value==='มส')){ sel.value='มส'; n++; if(typeof calcModeBRow==='function') calcModeBRow(sel); }
+  });
+  markTimeCheckRows();
+  toast('ตั้ง "มส" แล้ว '+n+' คน — ตรวจแล้วกด 💾 บันทึก','success');
+}
 function setScoreMode(mode){
   state.scoreMode=mode;
   document.getElementById('modeA').classList.toggle('tab-active',mode==='A');
@@ -2171,6 +2240,7 @@ function setScoreMode(mode){
   document.getElementById('sc_modeA').classList.toggle('hidden',mode!=='A');
   document.getElementById('sc_modeB').classList.toggle('hidden',mode!=='B');
   if(mode==='A'){ renderUnits(); renderScoreTable(); } else { renderModeB(); }
+  markTimeCheckRows(); renderTimeCheckBadge();
 }
 
 /* ---- Mode A: units ---- */
@@ -2698,7 +2768,34 @@ window.addEventListener('load', function(){
     Object.keys(pend).forEach(function(id){ try{ makeChart(id, pend[id]); }catch(e){} });
   }
 });
+// ---- 3.2 งานค้างของฉัน (หน้าแรก) ----
+state._todoBusy=false;
+async function loadMyTodo(){
+  const u=state.currentUser||{}; const el=document.getElementById('homeTodo');
+  if(!el || !u.name || u.role==='admin' || state._todoBusy) return;
+  state._todoBusy=true;
+  try{
+    const t=await GAS.call('getMyTodo',{teacher:u.name, role:u.role, homeroomClass:u.homeroomClass||'', semester:state.semester});
+    const items=[];
+    if(t.needDates) items.push({icon:'⚙️', text:'ยังไม่ได้ตั้งช่วงวันที่ภาคเรียนใน Settings (คำนวณคาบค้างไม่ได้)', cls:'bg-slate-100 text-slate-600', go:null});
+    if(t.uncheckedPeriods) items.push({icon:'📋', text:`คาบสอนที่ยังไม่เช็คชื่อ <b>${t.uncheckedPeriods}</b> คาบ (ภาคเรียนนี้)`, cls:'bg-amber-50 text-amber-800 border-amber-200', go:()=>{switchTab('attendance');setTimeout(()=>{switchAtt('period');setPdMode('subject');},50);}});
+    if(t.uncheckedFlagDays) items.push({icon:'🚩', text:`วันที่ยังไม่เช็คชื่อหน้าเสาธง <b>${t.uncheckedFlagDays}</b> วัน`, cls:'bg-rose-50 text-rose-800 border-rose-200', go:()=>{switchTab('attendance');setTimeout(()=>switchAtt('flag'),50);}});
+    if(t.ungradedSubjects&&t.ungradedSubjects.length) items.push({icon:'📝', text:`วิชาที่ยังไม่ตัดเกรด <b>${t.ungradedSubjects.length}</b> วิชา: `+t.ungradedSubjects.slice(0,4).map(x=>esc(x.name)+(x.room?' ('+esc(x.room)+')':'')).join(', ')+(t.ungradedSubjects.length>4?' …':''), cls:'bg-sky-50 text-sky-800 border-sky-200', go:()=>switchTab('scores')});
+    if(t.docsMissing) items.push({icon:'📤', text:`เอกสารการสอนค้างส่ง <b>${t.docsMissing}</b> รายการ (จาก ${t.docsTotal})`, cls:'bg-violet-50 text-violet-800 border-violet-200', go:()=>switchTab('teaching')});
+    if(!items.length){
+      el.classList.remove('hidden');
+      el.innerHTML='<div class="card p-3 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200">✅ ไม่มีงานค้างในภาคเรียนนี้ — เยี่ยมมาก!</div>';
+      return;
+    }
+    el.classList.remove('hidden');
+    el.innerHTML='<div class="card p-3"><div class="text-sm font-bold text-slate-700 mb-2">📣 งานค้างของฉัน <span class="text-xs font-normal text-slate-400">(ภาคเรียนที่ '+esc(t.semester)+' • แตะเพื่อไปทำ)</span></div><div class="flex flex-col gap-1.5">'+
+      items.map((it,i)=>`<div onclick="state._todoGo[${i}]&&state._todoGo[${i}]()" class="flex items-center gap-2 text-sm rounded-lg border px-3 py-2 ${it.cls} ${it.go?'cursor-pointer hover:opacity-90':''}"><span>${it.icon}</span><span>${it.text}</span>${it.go?'<span class="ml-auto text-xs">›</span>':''}</div>`).join('')+'</div></div>';
+    state._todoGo=items.map(it=>it.go);
+  }catch(e){ /* เงียบ — ไม่รบกวนหน้าแรก */ }
+  finally{ state._todoBusy=false; }
+}
 async function renderHome(){
+  loadMyTodo();
   const s=state.settings;
   document.getElementById('homeSchool').textContent=s.schoolName||'';
   document.getElementById('homeYear').textContent='ปีการศึกษา '+(s.academicYear||'');
@@ -3125,13 +3222,50 @@ function attSummary(students, draft){
 }
 
 /* ---- แถบปฏิทินรายคาบ (สีตามความครบของคาบตามตารางสอน) ---- */
-state.pdMonth=null; state.pdDays={};
+state.pdMonth=null; state.pdDays={}; state.pdMode='date'; state.pdSubject=null;
+function pdScheduleSrc(){
+  const u=state.currentUser;
+  return (u && u.role!=='admin') ? (state.mySchedule||[]) : (state.schedule||[]);
+}
+function setPdMode(mode){
+  state.pdMode=mode;
+  ['date','subject'].forEach(m=>{
+    const b=document.getElementById('pdmode-'+m); if(!b) return;
+    b.className='btn px-3 py-1.5 text-xs '+(m===mode?'bg-teal-600 text-white':'bg-slate-100 text-slate-600');
+  });
+  const wrap=document.getElementById('pd_subjectWrap');
+  wrap.classList.toggle('hidden', mode!=='subject');
+  if(mode==='subject'){
+    const seen={}; const list=[];
+    pdScheduleSrc().forEach(r=>{
+      const k=String(r.classLevel||'').trim()+'|'+String(r.subject||'').trim();
+      if(!r.classLevel||!r.subject||seen[k]) return; seen[k]=1; list.push({classLevel:String(r.classLevel).trim(), subject:String(r.subject).trim()});
+    });
+    list.sort((a,b)=>a.subject.localeCompare(b.subject)||a.classLevel.localeCompare(b.classLevel));
+    const sel=document.getElementById('pd_subject');
+    const cur=sel.value;
+    sel.innerHTML=list.length?list.map(x=>`<option value="${esc(x.classLevel)}|${esc(x.subject)}">${esc(x.subject)} • ${esc(x.classLevel)}</option>`).join(''):'<option value="">(ไม่มีวิชาในตารางสอน)</option>';
+    if(cur && [...sel.options].some(o=>o.value===cur)) sel.value=cur;
+    onPdSubjectChange();
+  }else{
+    state.pdSubject=null;
+    loadPeriodStrip();
+  }
+}
+function onPdSubjectChange(){
+  const v=document.getElementById('pd_subject').value;
+  if(!v){ state.pdSubject=null; }
+  else { const [classLevel,subject]=v.split('|'); state.pdSubject={classLevel,subject}; }
+  loadPeriodStrip();
+}
 async function loadPeriodStrip(){
   const u=state.currentUser||{};
   const month=state.pdMonth || (val('att_period_date')||todayISO()).slice(0,7);
   state.pdMonth=month;
   try{
-    const r=await GAS.call('getPeriodCheckedDates',{month, teacher:(u.role==='teacher'?u.name:'')});
+    const q={month, teacher:(u.role==='teacher'?u.name:'')};
+    if(state.pdMode==='subject' && state.pdSubject){ q.classLevel=state.pdSubject.classLevel; q.subject=state.pdSubject.subject; }
+    const r=await GAS.call('getPeriodCheckedDates',q);
     state.pdDays=(r&&r.days)||{};
   }catch(e){ state.pdDays={}; }
   renderPeriodStrip();
@@ -3154,7 +3288,7 @@ function renderPeriodStrip(){
     if(isSel) cls+='ring-2 ring-teal-500 ';
     let title;
     if(isHoliday){ cls+='bg-rose-50 text-rose-500 border-rose-200 font-semibold'; title=schoolDayReason(ymd)||'วันหยุด'; }
-    else if(!info.exp){ cls+='bg-slate-100 text-slate-400 border-slate-200'; title='ไม่มีคาบสอน'; }
+    else if(!info.exp){ cls+='bg-slate-100 text-slate-400 border-slate-200'; title=(state.pdMode==='subject'?'ไม่มีคาบวิชานี้':'ไม่มีคาบสอน'); }
     else if(info.done>=info.exp){ cls+='bg-emerald-500 text-white border-emerald-500 font-semibold'; title='เช็คครบ '+info.done+'/'+info.exp+' คาบ'; }
     else if(info.done>0){ cls+='bg-amber-400 text-white border-amber-400 font-semibold'; title='เช็คแล้ว '+info.done+'/'+info.exp+' คาบ'; }
     else { cls+='bg-white text-slate-600 border-slate-300 hover:border-teal-400'; title='ยังไม่เช็ค (มี '+info.exp+' คาบ)'; }
@@ -3168,6 +3302,17 @@ function setPdDate(ymd){
   if(mo!==state.pdMonth){ state.pdMonth=mo; loadPeriodStrip(); }
   else renderPeriodStrip();
   fillPeriodSlots();
+  // เลือกคาบให้อัตโนมัติ: ตามวิชาที่เลือก (โหมดรายวิชา) หรือคาบแรกที่ยังไม่เช็ค แล้วโหลดรายชื่อทันที
+  const slots=state.periodSlots||[];
+  if(!slots.length) return;
+  const checked=new Set(((state.pdDays[ymd]||{}).checked)||[]);
+  const match=(s)=> state.pdMode!=='subject' || !state.pdSubject ||
+    (String(s.classLevel).trim()===state.pdSubject.classLevel && String(s.subject).trim()===state.pdSubject.subject);
+  let idx=slots.findIndex(s=>match(s) && !checked.has(String(s.classLevel).trim()+'|'+String(s.period)));
+  if(idx<0) idx=slots.findIndex(match);
+  if(idx<0){ if(state.pdMode==='subject') toast('วันนี้ไม่มีคาบของวิชาที่เลือก','error'); return; }
+  document.getElementById('att_period_slot').value=String(idx);
+  loadPeriod();
 }
 function onPdDateChange(){
   fillPeriodSlots();
@@ -3342,6 +3487,105 @@ async function savePeriod(){
     toast('บันทึกเช็คชื่อคาบ '+slot.period+' แล้ว');
     showAttResult({classLevel:slot.classLevel, date, subtitle:'คาบ '+slot.period+' • '+(slot.subject||''), students:state.periodStudents, draft:state.periodDraft});
   }catch(e){ toast(e.message,'error'); } finally{ showLoading(false); }
+}
+
+/* ============================================================
+   📚 สรุปเวลาเรียนรายวิชา
+   ============================================================ */
+state.subjectAtt=null;
+function pdSubjectList(){
+  const seen={}; const list=[];
+  pdScheduleSrc().forEach(r=>{
+    const k=String(r.classLevel||'').trim()+'|'+String(r.subject||'').trim();
+    if(!r.classLevel||!r.subject||seen[k]) return; seen[k]=1;
+    list.push({classLevel:String(r.classLevel).trim(), subject:String(r.subject).trim()});
+  });
+  return list.sort((a,b)=>a.subject.localeCompare(b.subject)||a.classLevel.localeCompare(b.classLevel));
+}
+function initSubjectAtt(){
+  const sel=document.getElementById('sa_subject');
+  const list=pdSubjectList();
+  const cur=sel.value;
+  sel.innerHTML=list.length?list.map(x=>`<option value="${esc(x.classLevel)}|${esc(x.subject)}">${esc(x.subject)} • ${esc(x.classLevel)}</option>`).join(''):'<option value="">(ไม่มีวิชาในตารางสอน)</option>';
+  if(cur && [...sel.options].some(o=>o.value===cur)) sel.value=cur;
+  document.getElementById('sa_sem').value=state.semester||'1';
+}
+const SA_ABBR={'มา':'/','ขาด':'ข','ลา':'ล','สาย':'ส'};
+function saDateLabel(d){ return d.slice(8,10)+'/'+d.slice(5,7); }
+async function loadSubjectAtt(){
+  const v=document.getElementById('sa_subject').value;
+  if(!v){ toast('ไม่มีวิชาให้เลือก','error'); return; }
+  const [classLevel,subject]=v.split('|');
+  try{ showLoading(true);
+    state.subjectAtt=await GAS.call('getSubjectAttendance',{classLevel, subject, semester:document.getElementById('sa_sem').value});
+    renderSubjectAtt();
+  }catch(e){ toast(e.message,'error'); } finally{ showLoading(false); }
+}
+function renderSubjectAtt(){
+  const d=state.subjectAtt; const area=document.getElementById('sa_area'); const tot=document.getElementById('sa_totals');
+  if(!d) return;
+  if(d.needDates){ tot.innerHTML=''; area.innerHTML='<div class="text-amber-600">⚠️ ตั้งค่าช่วงวันที่ภาคเรียน (sem'+esc(d.semester)+'Start / sem'+esc(d.semester)+'End) ในชีต Settings ก่อน</div>'; return; }
+  const sm=d.summary;
+  tot.innerHTML=
+    `<span class="badge bg-slate-100 text-slate-700">${esc(d.subject)} • ${esc(d.classLevel)} • ภาคเรียนที่ ${esc(d.semester)}</span>`+
+    `<span class="badge bg-teal-100 text-teal-700">${sm.periodsTotal} คาบ (${esc(sm.from)} ถึง ${esc(sm.to)})</span>`+
+    `<span class="badge bg-emerald-100 text-emerald-700">เช็ครายคาบแล้ว ${sm.checked}</span>`+
+    `<span class="badge bg-amber-100 text-amber-700">ใช้ผลหน้าเสาธง ${sm.flagOnly}</span>`+
+    (sm.none?`<span class="badge bg-slate-100 text-slate-500">ไม่มีข้อมูล ${sm.none}</span>`:'')+
+    `<span class="badge ${sm.below80?'bg-rose-100 text-rose-700':'bg-emerald-100 text-emerald-700'}">ต่ำกว่า 80%: ${sm.below80} คน</span>`;
+  if(!d.dates.length){ area.innerHTML='<div class="text-slate-400">ยังไม่มีคาบของวิชานี้ในช่วงภาคเรียน (ตรวจตารางสอน/ปฏิทิน)</div>'; return; }
+  const dateTh=d.dates.map(x=>`<th class="px-1 text-center font-normal text-[10px] ${x.source==='period'?'text-slate-600':'text-slate-400'}" title="${x.source==='period'?'เช็ครายคาบ':x.source==='flag'?'ใช้ผลหน้าเสาธง':'ไม่มีข้อมูล'}">${saDateLabel(x.date)}<br><span class="text-[9px]">คาบ${esc(x.period)}</span></th>`).join('');
+  area.innerHTML='<div class="overflow-x-auto"><table class="w-full text-xs" style="min-width:'+(420+d.dates.length*34)+'px"><thead><tr class="text-left text-slate-400 border-b">'+
+    '<th class="py-1 px-1 text-center">เลขที่</th><th class="px-1">ชื่อ-นามสกุล</th>'+dateTh+
+    '<th class="px-1 text-center">มา</th><th class="px-1 text-center">ขาด</th><th class="px-1 text-center">ลา</th><th class="px-1 text-center">สาย</th><th class="px-1 text-center">%</th></tr></thead><tbody>'+
+    d.students.map(st=>`<tr class="border-b ${st.pct!=null&&st.pct<80?'bg-rose-50':''}">
+      <td class="py-1 px-1 text-center">${esc(st.number)}</td>
+      <td class="px-1 whitespace-nowrap">${esc(st.fullName)}</td>
+      ${d.dates.map(x=>{ const m=st.marks[x.date+'|'+x.period]||'มา'; const bad=m==='ขาด';
+        return `<td class="px-1 text-center ${bad?'text-rose-600 font-bold':m==='ลา'?'text-amber-600':m==='สาย'?'text-sky-600':'text-slate-500'} ${x.source==='period'?'':'opacity-60'}">${SA_ABBR[m]||m}</td>`; }).join('')}
+      <td class="px-1 text-center">${st.present}</td><td class="px-1 text-center ${st.absent?'text-rose-600 font-bold':''}">${st.absent}</td>
+      <td class="px-1 text-center">${st.leave}</td><td class="px-1 text-center">${st.late}</td>
+      <td class="px-1 text-center font-bold ${st.pct==null?'':st.pct<80?'text-rose-600':'text-emerald-700'}">${st.pct==null?'-':st.pct}</td>
+    </tr>`).join('')+'</tbody></table></div>';
+}
+function printSubjectAtt(){
+  const d=state.subjectAtt; if(!d||d.needDates){ toast('กดแสดงข้อมูลก่อน','error'); return; }
+  const st=state.settings||{};
+  const cell='border:1px solid #000;padding:2px 3px;text-align:center';
+  const CH=28;  // คาบต่อหน้า
+  const chunks=[]; for(let i=0;i<d.dates.length;i+=CH) chunks.push(d.dates.slice(i,i+CH));
+  if(!chunks.length) chunks.push([]);
+  const pages=chunks.map((ds,pi)=>{
+    const head=`<div style="text-align:center;font-weight:700;font-size:15px">แบบบันทึกเวลาเรียนรายวิชา ภาคเรียนที่ ${esc(d.semester)} ปีการศึกษา ${esc(st.academicYear||'')}</div>
+      <div style="text-align:center;font-size:12px">${esc(st.schoolName||'')}</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin:2mm 0">
+        <span>รายวิชา ${esc(d.code?d.code+' ':'')}${esc(d.subject)} • ชั้น ${esc(d.classLevel)}</span>
+        <span>ครูผู้สอน ${esc(d.teacher||'.................')} • รวม ${d.summary.periodsTotal} คาบ${chunks.length>1?' • หน้า '+(pi+1)+'/'+chunks.length:''}</span></div>`;
+    const th=`<tr style="background:#f1f5f9"><th style="${cell}">เลขที่</th><th style="${cell};text-align:left">ชื่อ-นามสกุล</th>`+
+      ds.map(x=>`<th style="${cell};font-weight:400;font-size:9px">${saDateLabel(x.date)}<br>คาบ${esc(x.period)}</th>`).join('')+
+      `<th style="${cell}">มา</th><th style="${cell}">ขาด</th><th style="${cell}">ลา</th><th style="${cell}">สาย</th><th style="${cell}">%</th></tr>`;
+    const rows=d.students.map(s=>`<tr><td style="${cell}">${esc(s.number)}</td><td style="${cell};text-align:left;white-space:nowrap">${esc(s.fullName)}</td>`+
+      ds.map(x=>{ const m=s.marks[x.date+'|'+x.period]||'มา'; return `<td style="${cell}">${SA_ABBR[m]||m}</td>`; }).join('')+
+      `<td style="${cell}">${s.present}</td><td style="${cell}">${s.absent}</td><td style="${cell}">${s.leave}</td><td style="${cell}">${s.late}</td><td style="${cell};font-weight:700">${s.pct==null?'-':s.pct}</td></tr>`).join('');
+    const foot=`<div style="font-size:11px;margin-top:2mm">สัญลักษณ์: / = มาเรียน, ข = ขาด, ล = ลา, ส = สาย • เกณฑ์เวลาเรียนไม่น้อยกว่าร้อยละ 80 • คาบที่ไม่ได้เช็ครายคาบ ใช้ผลการเช็คชื่อหน้าเสาธงของวันนั้น</div>
+      <div style="display:flex;justify-content:space-around;margin-top:8mm;text-align:center;font-size:12px">
+        <div><div>ลงชื่อ.................................................</div><div>(${esc(d.teacher||'.................................')})</div><div>ครูผู้สอน</div></div>
+        <div><div>ลงชื่อ.................................................</div><div>(.................................)</div><div>หัวหน้างานวิชาการ</div></div>
+      </div>`;
+    return `<div style="width:297mm;min-height:210mm;padding:10mm 12mm;background:#fff;color:#000;font-size:11px;page-break-after:always">${head}
+      <table style="width:100%;border-collapse:collapse;font-size:10px">${th}${rows}</table>${foot}</div>`;
+  });
+  document.getElementById('memoPrintArea').innerHTML='<style>@page{size:A4 landscape;margin:8mm}</style>'+pages.join('');
+  printOnly('memoPrintArea');
+}
+function exportSubjectAtt(){
+  const d=state.subjectAtt; if(!d||d.needDates){ toast('กดแสดงข้อมูลก่อน','error'); return; }
+  if(typeof XLSX==='undefined'){ toast('กำลังโหลดตัวช่วย Excel ลองอีกครั้ง','error'); return; }
+  const aoa=[['เลขที่','ชื่อ-นามสกุล',...d.dates.map(x=>saDateLabel(x.date)+' คาบ'+x.period),'มา','ขาด','ลา','สาย','รวมคาบ','ร้อยละ']];
+  d.students.forEach(s=>aoa.push([s.number, s.fullName, ...d.dates.map(x=>s.marks[x.date+'|'+x.period]||'มา'), s.present, s.absent, s.leave, s.late, s.total, s.pct==null?'':s.pct]));
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'เวลาเรียน');
+  XLSX.writeFile(wb, `เวลาเรียน_${d.subject}_${d.classLevel}_ภาค${d.semester}.xlsx`);
 }
 
 /* ============================================================
@@ -3673,6 +3917,8 @@ const PP5_PAGES=[
   {id:'scores', name:'5. คะแนน', both:true},
   {id:'attMonth', name:'6. เวลาเรียน (รายเดือน)', classOnly:true},
   {id:'attSummary', name:'7. เวลาเรียน (สรุป)', classOnly:true},
+  {id:'subAtt', name:'6. เวลาเรียนรายวิชา (รายคาบ)', subjectOnly:true},
+  {id:'subAttSum', name:'7. สรุปเวลาเรียนรายวิชา', subjectOnly:true},
   {id:'char', name:'8. คุณลักษณะอันพึงประสงค์', classOnly:true},
   {id:'readthink', name:'9. อ่าน คิดวิเคราะห์ เขียน', classOnly:true},
   {id:'comp', name:'10. สมรรถนะสำคัญ 5 ประการ', classOnly:true}
@@ -3680,7 +3926,7 @@ const PP5_PAGES=[
 function renderPP5Pages(){
   const wrap=document.getElementById('pp5_pages'); if(!wrap) return;
   const subjMode=document.getElementById('pp5_mode').value==='subject';
-  wrap.innerHTML=PP5_PAGES.filter(p=>subjMode? !p.classOnly : true).map(p=>
+  wrap.innerHTML=PP5_PAGES.filter(p=>subjMode? !p.classOnly : !p.subjectOnly).map(p=>
     `<label class="flex items-center gap-1"><input type="checkbox" class="pp5pg" value="${p.id}" checked> ${p.name}</label>`).join('');
 }
 function onPP5Mode(){
@@ -3710,7 +3956,7 @@ async function buildPP5Book(){
   const pages=new Set([...document.querySelectorAll('.pp5pg:checked')].map(c=>c.value));
   if(!pages.size){ toast('เลือกอย่างน้อย 1 หน้า','error'); return; }
   try{ showLoading(true);
-    const d=await GAS.call('getPP5Book',{scope:mode, classLevel:cls, subjectID});
+    const d=await GAS.call('getPP5Book',{scope:mode, classLevel:cls, subjectID, semester:state.semester});
     const parts=[];
     if(pages.has('cover'))      parts.push(pp5PageHTML(d.cover));
     if(pages.has('chart'))      parts.push(pp5ChartPage(d));
@@ -3719,6 +3965,8 @@ async function buildPP5Book(){
     if(pages.has('scores'))     parts.push(pp5ScoresPage(d));
     if(pages.has('attMonth'))   parts.push(pp5AttMonthPages(d));
     if(pages.has('attSummary')) parts.push(pp5AttSummaryPage(d));
+    if(pages.has('subAtt'))     parts.push(pp5SubAttPages(d));
+    if(pages.has('subAttSum'))  parts.push(pp5SubAttSummaryPage(d));
     if(pages.has('char'))       parts.push(pp5AbilityPage(d,'characteristic',CHAR_2551,'คุณลักษณะอันพึงประสงค์'));
     if(pages.has('readthink'))  parts.push(pp5AbilityPage(d,'readthink',READTHINK,'การอ่าน คิดวิเคราะห์ และเขียน'));
     if(pages.has('comp'))       parts.push(pp5Comp5Page(d));
@@ -3805,6 +4053,46 @@ function pp5ScoresPage(d){
   return pp5Page(pp5Head(d,'สรุปผลการเรียน (เกรด) รายวิชา')+`<table style="border-collapse:collapse;width:100%;font-size:12px">${head}${rows}</table>`, true);
 }
 
+// ---- โหมดครูประจำวิชา: เวลาเรียนรายคาบตามตารางสอน ----
+function pp5SubAttPages(d){
+  const sa=d.subjectAttendance;
+  if(!sa || sa.needDates) return pp5Page(pp5Head(d,'เวลาเรียนรายวิชา (รายคาบ)')+'<div style="color:#b45309">⚠️ ยังไม่ได้ตั้งช่วงวันที่ภาคเรียน (sem1Start/End) ในชีต Settings</div>');
+  if(!sa.dates.length) return pp5Page(pp5Head(d,'เวลาเรียนรายวิชา (รายคาบ)')+'<div style="color:#94a3b8">ยังไม่มีคาบของวิชานี้ในช่วงภาคเรียน</div>');
+  const cell='border:1px solid #000;padding:1px 2px;text-align:center';
+  const AB={'มา':'/','ขาด':'ข','ลา':'ล','สาย':'ส'};
+  const CH=30; const chunks=[]; for(let i=0;i<sa.dates.length;i+=CH) chunks.push(sa.dates.slice(i,i+CH));
+  return chunks.map((ds,pi)=>{
+    const th=`<tr style="background:#f1f5f9"><th style="${cell}">ที่</th><th style="${cell};text-align:left">ชื่อ-นามสกุล</th>`+
+      ds.map(x=>`<th style="${cell};font-weight:400;font-size:9px">${x.date.slice(8,10)}/${x.date.slice(5,7)}<br>คาบ${esc(x.period)}</th>`).join('')+
+      `<th style="${cell}">มา</th><th style="${cell}">ขาด</th><th style="${cell}">ลา</th><th style="${cell}">สาย</th><th style="${cell}">%</th></tr>`;
+    const rows=sa.students.map(s=>`<tr><td style="${cell}">${esc(s.number)}</td><td style="${cell};text-align:left;white-space:nowrap">${esc(s.fullName)}</td>`+
+      ds.map(x=>{ const m=s.marks[x.date+'|'+x.period]||'มา'; return `<td style="${cell}">${AB[m]||m}</td>`; }).join('')+
+      `<td style="${cell}">${s.present}</td><td style="${cell}">${s.absent}</td><td style="${cell}">${s.leave}</td><td style="${cell}">${s.late}</td><td style="${cell};font-weight:700;${s.pct!=null&&s.pct<80?'color:#dc2626':''}">${s.pct==null?'-':s.pct}</td></tr>`).join('');
+    return pp5Page(pp5Head(d,'เวลาเรียนรายวิชา (รายคาบ)'+(chunks.length>1?' — หน้า '+(pi+1)+'/'+chunks.length:''))+
+      `<div style="font-size:11px;margin-bottom:3px">รายวิชา ${esc(sa.code?sa.code+' ':'')}${esc(sa.subject)} • ครูผู้สอน ${esc(sa.teacher||'-')} • ภาคเรียนที่ ${esc(sa.semester)} • รวม ${sa.summary.periodsTotal} คาบ (${esc(sa.summary.from)} ถึง ${esc(sa.summary.to)})</div>
+      <table style="border-collapse:collapse;width:100%;font-size:10px">${th}${rows}</table>
+      <div style="font-size:10px;margin-top:3px">/ = มา • ข = ขาด • ล = ลา • ส = สาย • คาบที่ไม่ได้เช็ครายคาบ ใช้ผลหน้าเสาธงของวันนั้น • แดง = เวลาเรียนต่ำกว่าร้อยละ 80</div>`, true);
+  }).join('');
+}
+function pp5SubAttSummaryPage(d){
+  const sa=d.subjectAttendance;
+  if(!sa || sa.needDates || !sa.dates.length) return pp5SubAttPages(d);
+  const cell='border:1px solid #000;padding:2px 4px;text-align:center';
+  const rows=sa.students.map(s=>`<tr><td style="${cell}">${esc(s.number)}</td><td style="${cell};text-align:left;white-space:nowrap">${esc(s.fullName)}</td>
+    <td style="${cell}">${s.total}</td><td style="${cell}">${s.present}</td><td style="${cell}">${s.late}</td><td style="${cell}">${s.leave}</td><td style="${cell}">${s.absent}</td>
+    <td style="${cell};font-weight:700;${s.pct!=null&&s.pct<80?'color:#dc2626':''}">${s.pct==null?'-':s.pct}</td>
+    <td style="${cell}">${s.pct==null?'':(s.pct<80?'ไม่ผ่านเกณฑ์ (มส)':'ผ่านเกณฑ์')}</td></tr>`).join('');
+  return pp5Page(pp5Head(d,'สรุปเวลาเรียนรายวิชา')+
+    `<div style="font-size:12px;margin-bottom:4px">รายวิชา ${esc(sa.code?sa.code+' ':'')}${esc(sa.subject)} • ครูผู้สอน ${esc(sa.teacher||'-')} • ภาคเรียนที่ ${esc(sa.semester)} • คาบทั้งหมด ${sa.summary.periodsTotal} คาบ • ต่ำกว่าร้อยละ 80 จำนวน ${sa.summary.below80} คน</div>
+    <table style="border-collapse:collapse;width:100%;font-size:12px">
+    <tr style="background:#f1f5f9"><th style="${cell}">ที่</th><th style="${cell}">ชื่อ-นามสกุล</th><th style="${cell}">คาบทั้งหมด</th><th style="${cell}">มา</th><th style="${cell}">สาย</th><th style="${cell}">ลา</th><th style="${cell}">ขาด</th><th style="${cell}">ร้อยละ</th><th style="${cell}">ผลการตัดสิน</th></tr>
+    ${rows}</table>
+    <div style="font-size:11px;margin-top:4px">เกณฑ์: มีเวลาเรียนไม่น้อยกว่าร้อยละ 80 ของเวลาเรียนทั้งหมดในรายวิชา (หลักสูตรแกนกลางฯ 2551) • ผู้มีเวลาเรียนไม่ถึงเกณฑ์ให้ได้ "มส" เว้นแต่ได้รับการผ่อนผัน</div>
+    <div style="display:flex;justify-content:space-around;margin-top:14mm;text-align:center;font-size:12px">
+      <div><div>ลงชื่อ.................................................</div><div>(${esc(sa.teacher||'.................................')})</div><div>ครูผู้สอน</div></div>
+      <div><div>ลงชื่อ.................................................</div><div>(.................................)</div><div>หัวหน้างานวิชาการ</div></div>
+    </div>`);
+}
 function pp5AttMonthPages(d){
   if(!d.grids.length) return pp5Page(pp5Head(d,'เวลาเรียนรายเดือน')+'<div style="color:#94a3b8">ยังไม่มีข้อมูลการเช็คชื่อ</div>');
   return d.grids.map(gr=>{
